@@ -41,3 +41,22 @@ def test_native_argv_enables_only_known_long_context_models(profile, tmp_path):
             assert argv[argv.index('--model')+1] == expected
     finally:
         with_client.close()
+
+
+def test_adaptive_thinking_sees_through_a_gateway_model_prefix():
+    """A gateway-routed id must not fail open on the adaptive-thinking capability test.
+
+    ``CLAUDE_SUBSCRIPTION_DIRECTSDK_UPSTREAM`` routes through a gateway that namespaces
+    models (``claude-teams-group/...``). Matching NO_ADAPTIVE_THINKING against the full id
+    missed Haiku, so ``{'type': 'adaptive'}`` was sent and the upstream answered
+    ``400 adaptive thinking is not supported on this model``.
+    """
+    from model_catalog import native_model, supports_adaptive_thinking
+
+    assert supports_adaptive_thinking('claude-haiku-4-5-20251001') is False
+    assert supports_adaptive_thinking('claude-teams-group/claude-haiku-4-5-20251001') is False
+    assert supports_adaptive_thinking('claude-teams-group/claude-opus-5') is True
+
+    # The fix belongs in the capability lookup only: routing needs the full prefixed id.
+    assert native_model('claude-teams-group/claude-haiku-4-5-20251001') == \
+        'claude-teams-group/claude-haiku-4-5-20251001'

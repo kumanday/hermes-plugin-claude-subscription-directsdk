@@ -35,6 +35,10 @@ def supports_adaptive_thinking(model):
     # Body assembly precedes model validation, so an absent or invalid route answers True
     # and still reaches the existing `model is required` error.
     base = model.removesuffix('[1m]') if isinstance(model, str) else ''
+    # A gateway route carries the native id behind a group prefix
+    # (claude-teams-group/claude-haiku-4-5-20251001). Match on the native tail so the
+    # capability test cannot fail open; native_model() still returns the full id.
+    base = base.rsplit('/', 1)[-1]
     return ALIASES.get(base, base) not in NO_ADAPTIVE_THINKING
 
 
